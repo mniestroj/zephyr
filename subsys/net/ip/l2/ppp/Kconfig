@@ -1,0 +1,74 @@
+# Kconfig - PPP driver configuration options
+#
+#
+# Copyright (c) 2018 Grinn
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
+#
+# PPP options
+#
+menuconfig NET_L2_PPP
+	bool "Enable PPP support"
+	help
+	  Add support for PPP layer driver.
+
+if NET_L2_PPP
+
+menuconfig PPP_L2_SERIAL
+	bool "Enable PPP over serial interface"
+	help
+	  Add support for PPP over serial interface.
+
+if PPP_L2_SERIAL
+
+config PPP_L2_SERIAL_DEV_NAME
+	string "Name of serial device"
+	default "UART_0"
+	help
+	  Specify name of serial device used for PPP L2 interface.
+
+endif # PPP_L2_SERIAL
+
+menuconfig PPP_L2_DEBUG
+	bool
+	default n
+	prompt "PPP stack log support"
+	help
+	  This option enables log support for PPP
+
+if PPP_L2_DEBUG
+
+choice
+	prompt "PPP L2 log level"
+	help
+	  This option selects log level for PPP driver.
+
+config PPP_L2_LOG_LEVEL_ERROR
+	bool "Error"
+config PPP_L2_LOG_LEVEL_WARNING
+	bool "Warning"
+config PPP_L2_LOG_LEVEL_INFO
+	bool "Info"
+config PPP_L2_LOG_LEVEL_DEBUG
+	bool "Debug"
+endchoice
+
+config PPP_L2_DEBUG_DUMP
+	bool
+	prompt "Dump PPP packets"
+	help
+	  This option enables dumping of PPP packets
+
+endif # PPP_L2_DEBUG
+
+config PPP_L2_LOG_LEVEL
+	int
+	default 0
+	default 1 if PPP_L2_LOG_LEVEL_ERROR
+	default 2 if PPP_L2_LOG_LEVEL_WARNING
+	default 3 if PPP_L2_LOG_LEVEL_INFO
+	default 4 if PPP_L2_LOG_LEVEL_DEBUG
+
+endif

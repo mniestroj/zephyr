@@ -25,3 +25,7 @@ endif()
 if(CONFIG_NET_L2_OPENTHREAD)
   add_subdirectory(openthread)
 endif()
+
+if(CONFIG_NET_L2_PPP)
+  add_subdirectory(ppp)
+endif()

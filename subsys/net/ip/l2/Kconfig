@@ -134,4 +134,6 @@ config NET_DEBUG_ARP
 
 source "subsys/net/ip/l2/openthread/Kconfig"
 
+source "subsys/net/ip/l2/ppp/Kconfig"
+
 endmenu
