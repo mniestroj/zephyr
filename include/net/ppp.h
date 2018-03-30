@@ -43,6 +43,7 @@ struct ppp_context {
 	struct net_if *iface;
 	void *data;
 	void (*finished)(struct ppp_context *ppp);
+	struct k_work_q workq;
 
 	u16_t auth_type;
 	u16_t active_network_protocols;

@@ -103,7 +103,8 @@ static void lcp_set_opened(struct ppp_context *ppp)
 	lcp->echo_req_identifier = 0;
 	lcp->echo_reply_identifier = 0xff;
 	lcp->echo_fail_counter = 0;
-	k_delayed_work_submit(&lcp->echo_req_timer, ECHO_INTERVAL);
+	k_delayed_work_submit_to_queue(&ppp->workq, &lcp->echo_req_timer,
+				ECHO_INTERVAL);
 
 	/* Notify PPP layer about opened state */
 	ppp_link_opened(ppp);
@@ -215,7 +216,8 @@ static void lcp_conf_req_send(struct ppp_context *ppp)
 
 	lcp->conf_req_identifier++;
 
-	k_delayed_work_submit(&lcp->conf_req_timer, CONF_REQ_ACK_TIMEOUT);
+	k_delayed_work_submit_to_queue(&ppp->workq, &lcp->conf_req_timer,
+				CONF_REQ_ACK_TIMEOUT);
 
 	lcp_send_simple(ppp->iface, PPP_CONF_REQ,
 			lcp->conf_req_identifier);
@@ -258,7 +260,8 @@ static void lcp_term_req_send(struct ppp_context *ppp)
 
 	lcp->term_req_identifier++;
 
-	k_delayed_work_submit(&lcp->term_req_timer, TERM_REQ_ACK_TIMEOUT);
+	k_delayed_work_submit_to_queue(&ppp->workq, &lcp->term_req_timer,
+				TERM_REQ_ACK_TIMEOUT);
 
 	lcp_send_simple(ppp->iface, PPP_TERM_REQ,
 			lcp->term_req_identifier);
@@ -303,7 +306,8 @@ static void lcp_echo_req_send(struct k_work *work)
 
 	lcp->echo_req_identifier++;
 
-	k_delayed_work_submit(&lcp->echo_req_timer, ECHO_REPLY_TIMEOUT);
+	k_delayed_work_submit_to_queue(&ppp->workq, &lcp->echo_req_timer,
+				ECHO_REPLY_TIMEOUT);
 
 	lcp_send_data(ppp->iface, PPP_ECHO_REQ,
 		lcp->echo_req_identifier, sizeof(magic), (u8_t *) &magic);
@@ -323,7 +327,8 @@ static enum net_verdict lcp_echo_reply_recv(struct net_pkt *pkt, struct net_buf 
 
 	lcp->echo_reply_identifier = identifier;
 	lcp->echo_fail_counter = 0;
-	k_delayed_work_submit(&lcp->echo_req_timer, ECHO_INTERVAL);
+	k_delayed_work_submit_to_queue(&ppp->workq, &lcp->echo_req_timer,
+				ECHO_INTERVAL);
 
 	return NET_OK;
 }
@@ -561,7 +566,8 @@ static enum net_verdict lcp_term_req_recv(struct net_pkt *pkt, struct net_buf *f
 		break;
 	case LCP_OPENED:
 		lcp_set_state(lcp, LCP_STOPPING);
-		k_delayed_work_submit(&lcp->stopping_timer, K_SECONDS(2));
+		k_delayed_work_submit_to_queue(&ppp->workq,
+					&lcp->stopping_timer, K_SECONDS(2));
 		lcp_exit_opened(ppp);
 		break;
 	default:

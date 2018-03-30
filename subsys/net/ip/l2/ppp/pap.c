@@ -92,7 +92,8 @@ static int pap_auth_req_send(struct ppp_context *ppp)
 
 	pap->auth_req_identifier++;
 
-	k_delayed_work_submit(&pap->auth_req_timer, K_SECONDS(3));
+	k_delayed_work_submit_to_queue(&ppp->workq, &pap->auth_req_timer,
+				K_SECONDS(3));
 
 	return pap_send_req(ppp->iface, pap->auth_req_identifier,
 			ppp->user_data->user, ppp->user_data->password);

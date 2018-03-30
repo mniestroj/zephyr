@@ -159,7 +159,8 @@ static int ipcp_conf_req_send(struct ppp_context *ppp)
 
 	ipcp->conf_req_identifier++;
 
-	k_delayed_work_submit(&ipcp->conf_req_timer, K_SECONDS(3));
+	k_delayed_work_submit_to_queue(&ppp->workq, &ipcp->conf_req_timer,
+				K_SECONDS(3));
 
 	return ipcp_send_data(ppp->iface, PPP_CONF_REQ,
 			ipcp->conf_req_identifier,

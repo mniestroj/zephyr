@@ -340,8 +340,12 @@ void ppp_network_closed(struct ppp_context *ppp)
 	}
 }
 
+K_THREAD_STACK_DEFINE(ppp_work_q_stack, 1024);
+
 void ppp_init(struct ppp_context *ppp)
 {
+	k_work_q_start(&ppp->workq, ppp_work_q_stack,
+		K_THREAD_STACK_SIZEOF(ppp_work_q_stack), -1);
 	lcp_init(ppp);
 	pap_init(ppp);
 	ipcp_init(ppp);
