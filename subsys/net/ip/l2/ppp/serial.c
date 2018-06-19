@@ -316,6 +316,14 @@ static void ppps_finished(struct ppp_context *ppp)
 
 	NET_DBG("%s", __func__);
 
+	if (ppps->user_data->disconnect) {
+		int err;
+
+		err = ppps->user_data->disconnect(ppp);
+		if (err)
+			NET_ERR("Failed to disconnect: %d\n", err);
+	}
+
 	uart_irq_rx_disable(ppps->uart_dev);
 }
 

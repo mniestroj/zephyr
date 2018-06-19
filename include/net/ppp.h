@@ -96,6 +96,7 @@ struct ppp_context {
 struct ppps_user_data {
 	int (*connect)(struct ppp_context *ppp);
 	void (*connect_fail)(struct ppp_context *ppp, int err);
+	int (*disconnect)(struct ppp_context *ppp);
 	void (*recv)(struct ppp_context *ppp, u8_t *data, size_t len);
 
 	struct ppp_user_data ppp_user_data;
