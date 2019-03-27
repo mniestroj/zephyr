@@ -156,6 +156,25 @@ static bool lcp_is_supported_option(struct net_buf *frag, u16_t pos,
 	}
 }
 
+static bool lcp_nack_option(struct net_buf *frag, u16_t pos,
+			u8_t type, u8_t len, void *data)
+{
+	struct ppp_option_reply_state *state = data;
+
+	switch (type) {
+	case LCP_OPT_AUTH_PROTO:
+		state->frag = net_pkt_write_u8(state->pkt, state->frag,
+					state->pos, &state->pos, type);
+		state->frag = net_pkt_write_u8(state->pkt, state->frag,
+					state->pos, &state->pos, 4);
+		state->frag = net_pkt_write_be16(state->pkt, state->frag,
+					state->pos, &state->pos, PPP_PROTO_PAP);
+		return !!(state->frag);
+	default:
+		return true;
+	}
+}
+
 static bool lcp_reject_option(struct net_buf *frag, u16_t pos,
 			u8_t type, u8_t len, void *data)
 {
@@ -379,9 +398,9 @@ static enum net_verdict lcp_conf_req_nack(struct net_pkt *pkt,
 					struct net_buf *frag, u16_t pos,
 					u8_t identifier, u16_t length)
 {
-	NET_DBG("%s", __func__);
-
-	return NET_DROP;
+	return ppp_conf_req_reply(pkt, frag, pos, identifier, length,
+				PPP_PROTO_LCP, PPP_CONF_NACK,
+				lcp_nack_option);
 }
 
 static enum net_verdict lcp_conf_req_reject(struct net_pkt *pkt,
