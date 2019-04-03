@@ -55,7 +55,7 @@ bool ppp_options_iterate(struct net_buf *frag, u16_t pos,
 
 enum net_verdict ppp_conf_req_reject(struct net_pkt *pkt, struct net_buf *frag,
 				u16_t pos, u8_t identifier, u16_t length,
-				u16_t code, u16_t reject_len,
+				u16_t protocol, u16_t reject_len,
 				ppp_option_step_t step)
 {
 	struct net_if *iface = net_pkt_iface(pkt);
@@ -78,7 +78,7 @@ enum net_verdict ppp_conf_req_reject(struct net_pkt *pkt, struct net_buf *frag,
 	net_pkt_frag_add(out.pkt, out.frag);
 	net_pkt_set_iface(out.pkt, iface);
 
-	out.frag = net_pkt_write_be16(out.pkt, out.frag, 0, &out.pos, code);
+	out.frag = net_pkt_write_be16(out.pkt, out.frag, 0, &out.pos, protocol);
 	out.frag = net_pkt_write_u8(out.pkt, out.frag, out.pos, &out.pos,
                                     PPP_CONF_REJECT);
 	out.frag = net_pkt_write_u8(out.pkt, out.frag, out.pos, &out.pos,

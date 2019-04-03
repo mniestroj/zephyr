@@ -33,7 +33,7 @@ bool ppp_options_iterate(struct net_buf *frag, u16_t pos,
 
 enum net_verdict ppp_conf_req_reject(struct net_pkt *pkt, struct net_buf *frag,
 				u16_t pos, u8_t identifier, u16_t length,
-				u16_t code, u16_t reject_len,
+				u16_t protocol, u16_t reject_len,
 				ppp_option_step_t step);
 
 #ifdef __cplusplus
