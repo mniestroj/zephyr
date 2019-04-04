@@ -375,14 +375,6 @@ static enum net_verdict lcp_conf_req_ack(struct net_pkt *pkt,
 	return NET_OK;
 }
 
-static int lcp_term_ack_send(struct ppp_context *ppp)
-{
-	struct lcp_context *lcp = &ppp->lcp;
-
-	return lcp_send_simple(ppp->iface, PPP_TERM_ACK,
-		++lcp->term_ack_identifier);
-}
-
 static enum net_verdict lcp_conf_req_nack(struct net_pkt *pkt,
 					struct net_buf *frag, u16_t pos,
 					u8_t identifier, u16_t length)
@@ -390,6 +382,14 @@ static enum net_verdict lcp_conf_req_nack(struct net_pkt *pkt,
 	NET_DBG("%s", __func__);
 
 	return NET_DROP;
+}
+
+static int lcp_term_ack_send(struct ppp_context *ppp)
+{
+	struct lcp_context *lcp = &ppp->lcp;
+
+	return lcp_send_simple(ppp->iface, PPP_TERM_ACK,
+		++lcp->term_ack_identifier);
 }
 
 static enum net_verdict lcp_conf_req_recv(struct net_pkt *pkt,
