@@ -53,13 +53,15 @@ bool ppp_options_iterate(struct net_buf *frag, u16_t pos,
 	return true;
 }
 
-enum net_verdict ppp_conf_req_reject(struct net_pkt *pkt, struct net_buf *frag,
+enum net_verdict ppp_conf_req_reply(struct net_pkt *pkt, struct net_buf *frag,
 				u16_t pos, u8_t identifier, u16_t length,
-				u16_t protocol, u16_t reject_len,
+				u16_t protocol, u8_t code,
 				ppp_option_step_t step)
 {
 	struct net_if *iface = net_pkt_iface(pkt);
-	struct ppp_option_reject_state out = {};
+	struct ppp_option_reply_state out = {};
+	struct net_buf *len_frag;
+	u16_t len_pos;
 
 	NET_DBG("%s", __func__);
 
@@ -80,14 +82,19 @@ enum net_verdict ppp_conf_req_reject(struct net_pkt *pkt, struct net_buf *frag,
 
 	out.frag = net_pkt_write_be16(out.pkt, out.frag, 0, &out.pos, protocol);
 	out.frag = net_pkt_write_u8(out.pkt, out.frag, out.pos, &out.pos,
-                                    PPP_CONF_REJECT);
+                                    code);
 	out.frag = net_pkt_write_u8(out.pkt, out.frag, out.pos, &out.pos,
                                     identifier);
-	out.frag = net_pkt_write_be16(out.pkt, out.frag, out.pos, &out.pos,
-				reject_len + 4);
+
+	/* Remember where to write length */
+	len_frag = out.frag;
+	len_pos = out.pos;
+
+	/* Write dummy length for now */
+	out.frag = net_pkt_write_be16(out.pkt, out.frag, out.pos, &out.pos, 0xFFFF);
 
 	if (!ppp_options_iterate(frag, pos, length, step, &out)) {
-		NET_ERR("Failed to iterate rejected options");
+		NET_ERR("Failed to iterate options");
 		goto unref_pkt;
 	}
 
@@ -97,6 +104,10 @@ enum net_verdict ppp_conf_req_reject(struct net_pkt *pkt, struct net_buf *frag,
 	}
 
 	net_pkt_unref(pkt);
+
+	/* Update length */
+	len_frag = net_pkt_write_be16(out.pkt, len_frag, len_pos, &len_pos,
+				      out.pos - len_pos + 2);
 
 	net_if_queue_tx(iface, out.pkt);
 

@@ -67,7 +67,7 @@ static bool ipcp_is_supported_option(struct net_buf *frag, u16_t pos,
 static bool ipcp_reject_option(struct net_buf *frag, u16_t pos,
 			u8_t type, u8_t len, void *data)
 {
-	struct ppp_option_reject_state *state = data;
+	struct ppp_option_reply_state *state = data;
 
 	switch (type) {
 	case IPCP_OPT_IP_ADDR:
@@ -132,6 +132,16 @@ static enum net_verdict ipcp_conf_req_ack(struct net_pkt *pkt,
 	return NET_OK;
 }
 
+static enum net_verdict ipcp_conf_req_reject(struct net_pkt *pkt,
+					struct net_buf *frag,
+					u16_t pos, u8_t identifier,
+					u16_t length)
+{
+	return ppp_conf_req_reply(pkt, frag, pos, identifier, length,
+				PPP_PROTO_IPCP, PPP_CONF_REJECT,
+				ipcp_reject_option);
+}
+
 static int ipcp_conf_req_send(struct ppp_context *ppp)
 {
 	struct ipcp_context *ipcp = &ppp->ipcp;
@@ -180,9 +190,7 @@ static enum net_verdict ipcp_conf_req_recv(struct net_pkt *pkt,
 	NET_DBG("reject_len %d", (int) state.reject_len);
 
 	if (state.reject_len)
-		return ppp_conf_req_reject(pkt, frag, pos, identifier, length,
-					PPP_PROTO_IPCP,
-					state.reject_len, ipcp_reject_option);
+		return ipcp_conf_req_reject(pkt, frag, pos, identifier, length);
 
 	return ipcp_conf_req_ack(pkt, frag, pos, identifier, length);
 }

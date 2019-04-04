@@ -159,7 +159,7 @@ static bool lcp_is_supported_option(struct net_buf *frag, u16_t pos,
 static bool lcp_reject_option(struct net_buf *frag, u16_t pos,
 			u8_t type, u8_t len, void *data)
 {
-	struct ppp_option_reject_state *state = data;
+	struct ppp_option_reply_state *state = data;
 
 	switch (type) {
 	case LCP_OPT_AUTH_PROTO:
@@ -384,6 +384,15 @@ static enum net_verdict lcp_conf_req_nack(struct net_pkt *pkt,
 	return NET_DROP;
 }
 
+static enum net_verdict lcp_conf_req_reject(struct net_pkt *pkt,
+					struct net_buf *frag, u16_t pos,
+					u8_t identifier, u16_t length)
+{
+	return ppp_conf_req_reply(pkt, frag, pos, identifier, length,
+				PPP_PROTO_LCP, PPP_CONF_REJECT,
+				lcp_reject_option);
+}
+
 static int lcp_term_ack_send(struct ppp_context *ppp)
 {
 	struct lcp_context *lcp = &ppp->lcp;
@@ -429,9 +438,7 @@ static enum net_verdict lcp_conf_req_recv(struct net_pkt *pkt,
 		(int) state.nack_len, (int) state.reject_len);
 
 	if (state.reject_len)
-		return ppp_conf_req_reject(pkt, frag, pos, identifier, length,
-					PPP_PROTO_LCP,
-					state.reject_len, lcp_reject_option);
+		return lcp_conf_req_reject(pkt, frag, pos, identifier, length);
 
 	if (state.nack_len)
 		return lcp_conf_req_nack(pkt, frag, pos, identifier, length);

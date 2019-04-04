@@ -18,7 +18,7 @@ struct ppp_option_validate_state {
 	u16_t reject_len;
 };
 
-struct ppp_option_reject_state {
+struct ppp_option_reply_state {
 	struct net_pkt *pkt;
 	struct net_buf *frag;
 	u16_t pos;
@@ -31,9 +31,9 @@ bool ppp_options_iterate(struct net_buf *frag, u16_t pos,
 			u16_t length, ppp_option_step_t step,
 			void *data);
 
-enum net_verdict ppp_conf_req_reject(struct net_pkt *pkt, struct net_buf *frag,
+enum net_verdict ppp_conf_req_reply(struct net_pkt *pkt, struct net_buf *frag,
 				u16_t pos, u8_t identifier, u16_t length,
-				u16_t protocol, u16_t reject_len,
+				u16_t protocol, u8_t code,
 				ppp_option_step_t step);
 
 #ifdef __cplusplus
