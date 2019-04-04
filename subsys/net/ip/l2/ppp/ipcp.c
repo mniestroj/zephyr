@@ -132,14 +132,6 @@ static enum net_verdict ipcp_conf_req_ack(struct net_pkt *pkt,
 	return NET_OK;
 }
 
-static enum net_verdict ipcp_conf_req_nack(struct net_pkt *pkt, struct net_buf *frag, u16_t pos,
-					u8_t identifier, u16_t length)
-{
-	NET_DBG("%s", __func__);
-
-	return NET_DROP;
-}
-
 static int ipcp_conf_req_send(struct ppp_context *ppp)
 {
 	struct ipcp_context *ipcp = &ppp->ipcp;
@@ -185,16 +177,12 @@ static enum net_verdict ipcp_conf_req_recv(struct net_pkt *pkt,
 	if (!ppp_options_iterate(frag, pos, length, ipcp_is_supported_option, &state))
 		return NET_DROP;
 
-	NET_DBG("nack_len %d reject_len %d",
-		(int) state.nack_len, (int) state.reject_len);
+	NET_DBG("reject_len %d", (int) state.reject_len);
 
 	if (state.reject_len)
 		return ppp_conf_req_reject(pkt, frag, pos, identifier, length,
 					PPP_PROTO_IPCP,
 					state.reject_len, ipcp_reject_option);
-
-	if (state.nack_len)
-		return ipcp_conf_req_nack(pkt, frag, pos, identifier, length);
 
 	return ipcp_conf_req_ack(pkt, frag, pos, identifier, length);
 }
