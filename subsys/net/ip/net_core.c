@@ -25,6 +25,7 @@ LOG_MODULE_REGISTER(net_core, CONFIG_NET_CORE_LOG_LEVEL);
 #include <net/net_mgmt.h>
 #include <net/net_pkt.h>
 #include <net/net_core.h>
+#include <net/ppp.h>
 #include <net/dns_resolve.h>
 #include <net/gptp.h>
 #include <net/websocket.h>
@@ -149,6 +150,9 @@ static void net_post_init(void)
 #endif
 #if defined(CONFIG_NET_GPTP)
 	net_gptp_init();
+#endif
+#if defined(CONFIG_NET_L2_PPP_AUTO_OPEN)
+	net_ppp_open_all();
 #endif
 }
 

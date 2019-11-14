@@ -385,6 +385,11 @@ struct ppp_context {
 	} carrier_mgmt;
 
 	struct {
+		/** Open/close handler worker. */
+		struct k_work work;
+	} open_close_mgmt;
+
+	struct {
 		/** Finite state machine for LCP */
 		struct ppp_fsm fsm;
 
@@ -523,6 +528,25 @@ void net_ppp_carrier_on(struct net_if *iface);
  * @param iface Network interface
  */
 void net_ppp_carrier_off(struct net_if *iface);
+
+/**
+ * @brief Administrative Open of PPP Link
+ *
+ * @param iface Network interface
+ */
+void net_ppp_open(struct net_if *iface);
+
+/**
+ * @brief Administrative Close of PPP Link
+ *
+ * @param iface Network interface
+ */
+void net_ppp_close(struct net_if *iface);
+
+/**
+ * @brief Administrative Open of PPP Links
+ */
+void net_ppp_open_all(void);
 
 /**
  * @brief Initialize PPP L2 stack for a given interface

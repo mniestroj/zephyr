@@ -189,16 +189,34 @@ static void ppp_lower_up(struct ppp_context *ctx)
 	}
 }
 
-static void start_ppp(struct ppp_context *ctx)
+static void ppp_up(struct ppp_context *ctx)
 {
+	NET_DBG("");
+
 	ppp_change_phase(ctx, PPP_ESTABLISH);
 
 	ppp_lower_up(ctx);
+}
 
-	if (ppp_lcp) {
-		NET_DBG("Starting LCP");
-		ppp_lcp->open(ctx);
+static void ppp_down(struct ppp_context *ctx)
+{
+	NET_DBG("");
+
+	ppp_lower_down(ctx);
+
+	ppp_change_phase(ctx, PPP_DEAD);
+}
+
+static void net_ppp_open_one(struct net_if *iface, void *user_data)
+{
+	if (net_if_l2(iface) == &NET_L2_GET_NAME(PPP)) {
+		net_ppp_open(iface);
 	}
+}
+
+void net_ppp_open_all(void)
+{
+	net_if_foreach(net_ppp_open_one, NULL);
 }
 
 static int ppp_enable(struct net_if *iface, bool state)
@@ -215,7 +233,7 @@ static int ppp_enable(struct net_if *iface, bool state)
 	ctx->is_enabled = state;
 
 	if (!state) {
-		ppp_lower_down(ctx);
+		ppp_down(ctx);
 
 		if (ppp->stop) {
 			ppp->stop(net_if_get_device(iface));
@@ -228,7 +246,7 @@ static int ppp_enable(struct net_if *iface, bool state)
 		if (ctx->is_startup_pending) {
 			ctx->is_enable_done = true;
 		} else {
-			start_ppp(ctx);
+			ppp_up(ctx);
 		}
 	}
 
@@ -273,10 +291,6 @@ static void carrier_off(struct k_work *work)
 
 	NET_DBG("Carrier OFF for interface %p", ctx->iface);
 
-	ppp_lower_down(ctx);
-
-	ppp_change_phase(ctx, PPP_DEAD);
-
 	ppp_mgmt_raise_carrier_off_event(ctx->iface);
 
 	net_if_carrier_down(ctx->iface);
@@ -304,6 +318,50 @@ void net_ppp_carrier_off(struct net_if *iface)
 	struct ppp_context *ctx = net_if_l2_data(iface);
 
 	handle_carrier(ctx, carrier_off);
+}
+
+static void handle_open(struct k_work *work)
+{
+	struct ppp_context *ctx = CONTAINER_OF(work, struct ppp_context,
+					       open_close_mgmt.work);
+
+	if (ppp_lcp) {
+		NET_DBG("Open LCP");
+		ppp_lcp->open(ctx);
+	}
+}
+
+static void handle_close(struct k_work *work)
+{
+	struct ppp_context *ctx = CONTAINER_OF(work, struct ppp_context,
+					       open_close_mgmt.work);
+
+	if (ppp_lcp) {
+		NET_DBG("Close LCP");
+		ppp_lcp->close(ctx, "Administrative close");
+	}
+}
+
+static void handle_open_close(struct ppp_context *ctx,
+			      k_work_handler_t handler)
+{
+	k_work_init(&ctx->open_close_mgmt.work, handler);
+
+	k_work_submit(&ctx->open_close_mgmt.work);
+}
+
+void net_ppp_open(struct net_if *iface)
+{
+	struct ppp_context *ctx = net_if_l2_data(iface);
+
+	handle_open_close(ctx, handle_open);
+}
+
+void net_ppp_close(struct net_if *iface)
+{
+	struct ppp_context *ctx = net_if_l2_data(iface);
+
+	handle_open_close(ctx, handle_close);
 }
 
 #if defined(CONFIG_NET_SHELL)
@@ -435,7 +493,7 @@ bail_out:
 	ctx->is_startup_pending = false;
 
 	if (ctx->is_enable_done) {
-		start_ppp(ctx);
+		ppp_up(ctx);
 		ctx->is_enable_done = false;
 	}
 }

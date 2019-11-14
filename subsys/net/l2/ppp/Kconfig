@@ -18,6 +18,12 @@ config NET_L2_PPP_DELAY_STARTUP_MS
 	  Wait amount of milliseconds before starting PPP. Value 0 disables
 	  the wait.
 
+config NET_L2_PPP_AUTO_OPEN
+	bool "Automatically open PPP connection during start"
+	help
+	  This option tells PPP L2 layer to automatically open link after
+	  setting it up.
+
 config NET_L2_PPP_TIMEOUT
 	int "Maximum timeout in ms for Configure-Req"
 	default 3000
