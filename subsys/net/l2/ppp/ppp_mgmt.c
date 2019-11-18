@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2020 Lemonbeat GmbH
+ * Copyright (c) 2020 Grinn
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -14,4 +15,9 @@ void ppp_mgmt_raise_carrier_on_event(struct net_if *iface)
 void ppp_mgmt_raise_carrier_off_event(struct net_if *iface)
 {
 	net_mgmt_event_notify(NET_EVENT_PPP_CARRIER_OFF, iface);
+}
+
+void ppp_mgmt_raise_terminated_event(struct net_if *iface)
+{
+	net_mgmt_event_notify(NET_EVENT_PPP_TERMINATED, iface);
 }

@@ -571,6 +571,7 @@ void net_ppp_init(struct net_if *iface);
 enum net_event_ppp_cmd {
 	NET_EVENT_PPP_CMD_CARRIER_ON = 1,
 	NET_EVENT_PPP_CMD_CARRIER_OFF,
+	NET_EVENT_PPP_CMD_TERMINATED,
 };
 
 #define NET_EVENT_PPP_CARRIER_ON					\
@@ -578,6 +579,9 @@ enum net_event_ppp_cmd {
 
 #define NET_EVENT_PPP_CARRIER_OFF					\
 	(_NET_PPP_EVENT | NET_EVENT_PPP_CMD_CARRIER_OFF)
+
+#define NET_EVENT_PPP_TERMINATED					\
+	(_NET_PPP_EVENT | NET_EVENT_PPP_CMD_TERMINATED)
 
 struct net_if;
 
@@ -606,6 +610,20 @@ static inline void ppp_mgmt_raise_carrier_on_event(struct net_if *iface)
 void ppp_mgmt_raise_carrier_off_event(struct net_if *iface);
 #else
 static inline void ppp_mgmt_raise_carrier_off_event(struct net_if *iface)
+{
+	ARG_UNUSED(iface);
+}
+#endif
+
+/**
+ * @brief Raise TERMINATED event when PPP link is terminated.
+ *
+ * @param iface PPP network interface.
+ */
+#if defined(CONFIG_NET_L2_PPP_MGMT)
+void ppp_mgmt_raise_terminated_event(struct net_if *iface);
+#else
+static inline void ppp_mgmt_raise_terminated_event(struct net_if *iface)
 {
 	ARG_UNUSED(iface);
 }
