@@ -3589,6 +3589,68 @@ static int cmd_net_ppp_status(const struct shell *shell, size_t argc,
 	return 0;
 }
 
+static int cmd_net_ppp_open(const struct shell *shell, size_t argc,
+			    char *argv[])
+{
+#if defined(CONFIG_NET_PPP)
+	struct net_if *iface;
+	int idx;
+
+	idx = get_iface_idx(shell, argv[1]);
+	if (idx < 0) {
+		return -ENOEXEC;
+	}
+
+	iface = net_if_get_by_index(idx);
+	if (!iface) {
+		PR_WARNING("No such interface in index %d\n", idx);
+		return -ENOEXEC;
+	}
+
+	if (net_if_l2(iface) != &NET_L2_GET_NAME(PPP)) {
+		PR_WARNING("Interface index %d is not PPP\n", idx);
+		return -ENOEXEC;
+	}
+
+	net_ppp_open(iface);
+#else
+	PR_INFO("Set %s to enable %s support.\n", "CONFIG_NET_L2_PPP", "PPP");
+#endif
+
+	return 0;
+}
+
+static int cmd_net_ppp_close(const struct shell *shell, size_t argc,
+			    char *argv[])
+{
+#if defined(CONFIG_NET_PPP)
+	struct net_if *iface;
+	int idx;
+
+	idx = get_iface_idx(shell, argv[1]);
+	if (idx < 0) {
+		return -ENOEXEC;
+	}
+
+	iface = net_if_get_by_index(idx);
+	if (!iface) {
+		PR_WARNING("No such interface in index %d\n", idx);
+		return -ENOEXEC;
+	}
+
+	if (net_if_l2(iface) != &NET_L2_GET_NAME(PPP)) {
+		PR_WARNING("Interface index %d is not PPP\n", idx);
+		return -ENOEXEC;
+	}
+
+	net_ppp_close(iface);
+#else
+	PR_INFO("Set %s to enable %s support.\n", "CONFIG_NET_L2_PPP", "PPP");
+#endif
+
+	return 0;
+}
+
 static int cmd_net_route(const struct shell *shell, size_t argc, char *argv[])
 {
 	ARG_UNUSED(argc);
@@ -4607,6 +4669,12 @@ SHELL_STATIC_SUBCMD_SET_CREATE(net_cmd_ppp,
 	SHELL_CMD(status, NULL,
 		  "'net ppp status' prints information about PPP.",
 		  cmd_net_ppp_status),
+	SHELL_CMD(open, NULL,
+		  "'net ppp open' opens PPP link.",
+		  cmd_net_ppp_open),
+	SHELL_CMD(close, NULL,
+		  "'net ppp close' closes PPP link.",
+		  cmd_net_ppp_close),
 	SHELL_SUBCMD_SET_END
 );
 
