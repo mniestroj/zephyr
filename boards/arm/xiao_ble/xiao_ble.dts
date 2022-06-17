@@ -21,7 +21,7 @@
 		zephyr,bt-c2h-uart = &usb_cdc_acm_uart;
 		zephyr,sram = &sram0;
 		zephyr,flash = &flash0;
-		zephyr,code-partition = &slot0_partition;
+		zephyr,code-partition = &code_partition;
 	};
 
 	leds {
@@ -139,30 +139,34 @@
 		compatible = "fixed-partitions";
 		#address-cells = <1>;
 		#size-cells = <1>;
-
-		/* The size of this partition ensures that MCUBoot can be built
-		 * with an RTT console, CDC ACM support, and w/o optimizations.
+		
+		sd_partition: partition@0 {
+			label = "softdevice";
+			reg = <0x00000000 0x00027000>;
+		};
+		
+		code_partition: partition@27000 {
+			label = "code_partition";
+			reg = <0x00027000 0x000c5000>;
+		};
+		        
+		/*
+		 * The flash starting at 0x000ec000 and ending at
+		 * 0x000f3fff is reserved for use by the application.
 		 */
-		boot_partition: partition@0 {
-			label = "mcuboot";
-			reg = <0x00000000 0x00012000>;
-		};
-
-		slot0_partition: partition@12000 {
-			label = "image-0";
-			reg = <0x00012000 0x00069000>;
-		};
-		slot1_partition: partition@7b000 {
-			label = "image-1";
-			reg = <0x0007b000 0x00069000>;
-		};
-		scratch_partition: partition@e4000 {
-			label = "image-scratch";
-			reg = <0x000e4000 0x00018000>;
-		};
-		storage_partition: partition@fc000 {
+		        
+		/*
+		 * Storage partition will be used by FCB/LittleFS/NVS
+		 * if enabled.
+		 */
+		storage_partition: partition@ec000 {
 			label = "storage";
-			reg = <0x000fc000 0x00004000>;
+			reg = <0x000ec000 0x00008000>;
+		};
+		
+		boot_partition: partition@f4000 {
+			label = "adafruit_boot";
+			reg = <0x000f4000 0x0000c000>;
 		};
 	};
 };

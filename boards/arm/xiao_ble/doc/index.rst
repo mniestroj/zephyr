@@ -82,18 +82,36 @@ LED
 Programming and Debugging
 *************************
 
-The XIAO BLE ships with a bootloader. However, this guide doesn't describe how
-to use it and instead an External Debug Probe is used in order to program the
-board. If you have one, you can also use an external :ref:`debug probe
-<debug-probes>` to flash and debug Zephyr applications, but you need to solder
-an SWD header onto the back side of the board.
+The XIAO BLE ships with the `Adafruit nRF52 Bootloader`_ which supports flashing
+using `UF2`_. Doing so allows easy flashing of new images, but does not support
+debugging the device.
+
+UF2 Flashing
+============
+
+To enter the bootloader, connect the USB port of the XIAO BLE to your host, and
+double tap the reset botton to the left of the USB connector. A mass storage
+device named `XIAO BLE` should appear on the host. Using the command line, or
+your file manager copy the `zephyr/zephyr.uf2` file from your build to the base
+of the `XIAO BLE` mass storage device. The XIAO BLE will automatically reset
+and launch the newly flashed application.
+
+
+External Debugger
+=================
+
+In order to support debugging the device, instead of using the bootloader, you
+can use an External Debug Probe to program the board. If you have one, you can
+also use an external :ref:`debug probe <debug-probes>` to flash and debug
+Zephyr applications, but you need to solder an SWD header onto the back side of
+the board.
 
 For Segger J-Link debug probes, follow the instructions in the
 :ref:`jlink-external-debug-probe` page to install and configure all the
 necessary software.
 
 Flashing
-========
+--------
 
 Follow the instructions in the :ref:`jlink-external-debug-probe` page to install
 and configure all the necessary software. Then build and flash applications as
@@ -122,7 +140,7 @@ initialized before any text is printed, as below:
    :gen-args: -DCONFIG_BOOT_DELAY=5000
 
 Debugging
-=========
+---------
 
 Refer to the :ref:`jlink-external-debug-probe` page to learn about debugging
 boards with a Segger IC.
@@ -158,6 +176,8 @@ References
 
 .. target-notes::
 
+.. _Adafruit nRF52 Bootloader: https://github.com/adafruit/Adafruit_nRF52_Bootloader
+.. _UF2: https://github.com/microsoft/uf2
 .. _XIAO BLE wiki: https://wiki.seeedstudio.com/XIAO_BLE/
 .. _pinouts: https://wiki.seeedstudio.com/XIAO_BLE/#hardware-overview
 .. _schematic: https://wiki.seeedstudio.com/XIAO_BLE/#resources
