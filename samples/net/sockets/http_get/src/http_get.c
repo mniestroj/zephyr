@@ -128,6 +128,11 @@ int main(void)
 		}
 
 		response[len] = 0;
+		for (int i = 0; i < len; i++) {
+			if (response[i] == '\r') {
+				response[i] = ' ';
+			}
+		}
 		printf("%s", response);
 	}
 
