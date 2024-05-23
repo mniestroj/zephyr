@@ -7,6 +7,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "net_connect.h"
+
 #if !defined(__ZEPHYR__)
 
 #include <netinet/in.h>
@@ -60,6 +62,8 @@ int main(void)
 	static struct addrinfo hints;
 	struct addrinfo *res;
 	int st, sock;
+
+	net_connect();
 
 #if defined(CONFIG_NET_SOCKETS_SOCKOPT_TLS)
 	tls_credential_add(CA_CERTIFICATE_TAG, TLS_CREDENTIAL_CA_CERTIFICATE,
