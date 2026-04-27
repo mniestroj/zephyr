@@ -16,6 +16,9 @@ if(CONFIG_NET_NATIVE_OFFLOADED_SOCKETS)
   )
   zephyr_library_sources(nsos_netdb.c)
   zephyr_library_sources(nsos_sockets.c)
+  if(CONFIG_NATIVE_LIBC)
+    zephyr_library_sources(nsos_native_posix_net.c)
+  endif()
   target_compile_options(native_simulator BEFORE INTERFACE
     -I${BOARD_DIR}
     -DNSOS_EPOLL_WAIT_INTERVAL=${CONFIG_NET_NATIVE_OFFLOADED_SOCKETS_EPOLL_WAIT_INTERVAL}
