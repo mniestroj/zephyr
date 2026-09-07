@@ -68,6 +68,11 @@ static int nsos_socket_offload_init(const struct device *arg);
 
 static struct offloaded_if_api nsos_iface_offload_api;
 
+static int nsos_host_ifindex(void);
+
+/* Zephyr net_if index of the single offloaded interface, set at init. */
+static int nsos_zephyr_ifindex;
+
 NET_DEVICE_OFFLOAD_INIT(nsos_socket, "nsos_socket",
 			nsos_socket_offload_init,
 			NULL,
@@ -462,6 +467,24 @@ static int nsos_ioctl(void *obj, unsigned int request, va_list args)
 	return -EINVAL;
 }
 
+/* Only addresses with a scope narrower than global carry an interface index;
+ * everything else must not carry one.
+ */
+static bool ipv6_addr_is_scoped(const uint8_t addr[16])
+{
+	/* fe80::/10 link-local unicast */
+	if (addr[0] == 0xfe && (addr[1] & 0xc0) == 0x80) {
+		return true;
+	}
+
+	/* ff01::/16 interface-local and ff02::/16 link-local multicast */
+	if (addr[0] == 0xff && (addr[1] & 0x0f) <= 0x02) {
+		return true;
+	}
+
+	return false;
+}
+
 static int sockaddr_to_nsos_mid(const struct net_sockaddr *addr, net_socklen_t addrlen,
 				struct nsos_mid_sockaddr **addr_mid, size_t *addrlen_mid)
 {
@@ -505,7 +528,12 @@ static int sockaddr_to_nsos_mid(const struct net_sockaddr *addr, net_socklen_t a
 		addr_in_mid->sin6_port = addr_in->sin6_port;
 		memcpy(addr_in_mid->sin6_addr, addr_in->sin6_addr.s6_addr,
 		       sizeof(addr_in_mid->sin6_addr));
-		addr_in_mid->sin6_scope_id = addr_in->sin6_scope_id;
+		/* A Zephyr net_if index means nothing to the host stack. The
+		 * offloaded interface always represents the same host
+		 * interface, so a scoped address can only ever refer to it.
+		 */
+		addr_in_mid->sin6_scope_id =
+			ipv6_addr_is_scoped(addr_in_mid->sin6_addr) ? nsos_host_ifindex() : 0;
 
 		*addrlen_mid = sizeof(*addr_in_mid);
 
@@ -588,7 +616,11 @@ static int sockaddr_from_nsos_mid(struct net_sockaddr *addr, net_socklen_t *addr
 		addr_in.sin6_port = addr_in_mid->sin6_port;
 		memcpy(addr_in.sin6_addr.s6_addr, addr_in_mid->sin6_addr,
 		       sizeof(addr_in.sin6_addr.s6_addr));
-		addr_in.sin6_scope_id = addr_in_mid->sin6_scope_id;
+		/* Conversely a host ifindex means nothing to the Zephyr stack,
+		 * and would not even fit in the uint8_t field.
+		 */
+		addr_in.sin6_scope_id =
+			ipv6_addr_is_scoped(addr_in_mid->sin6_addr) ? nsos_zephyr_ifindex : 0;
 
 		memcpy(addr, &addr_in, MIN(*addrlen, sizeof(addr_in)));
 		*addrlen = sizeof(addr_in);
@@ -717,15 +749,6 @@ static int nsos_bind(void *obj, const struct net_sockaddr *addr, net_socklen_t a
 	ret = sockaddr_to_nsos_mid(addr, addrlen, &addr_mid, &addrlen_mid);
 	if (ret < 0) {
 		goto return_ret;
-	}
-
-	if (addr_mid->sa_family == NSOS_MID_AF_INET6) {
-		struct nsos_mid_sockaddr_in6 *addr6 = (struct nsos_mid_sockaddr_in6 *)addr_mid;
-		int host_ifindex = nsos_host_ifindex();
-
-		if (host_ifindex != 0 && addr6->sin6_addr[0] == 0xff && addr6->sin6_scope_id == 0) {
-			addr6->sin6_scope_id = host_ifindex;
-		}
 	}
 
 	ret = nsos_adapt_bind(sock->poll.mid.fd, addr_mid, addrlen_mid);
@@ -1864,6 +1887,8 @@ static void nsos_iface_api_init(struct net_if *iface)
 	net_if_socket_offload_set(iface, nsos_socket_create);
 
 	socket_offload_dns_register(&nsos_dns_ops);
+
+	nsos_zephyr_ifindex = net_if_get_by_iface(iface);
 
 	if (IS_ENABLED(CONFIG_NET_IPV6)) {
 		/* The host stack owns ND/DAD. Without this, mirrored addresses stay
