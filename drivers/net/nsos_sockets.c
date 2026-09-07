@@ -68,9 +68,7 @@ static int nsos_socket_offload_init(const struct device *arg);
 
 static struct offloaded_if_api nsos_iface_offload_api;
 
-static int nsos_host_ifindex(void);
-
-/* Zephyr net_if index of the single offloaded interface, set at init. */
+/* Zephyr net_if index of the single offloaded interface; never changes. */
 static int nsos_zephyr_ifindex;
 
 NET_DEVICE_OFFLOAD_INIT(nsos_socket, "nsos_socket",
@@ -467,6 +465,34 @@ static int nsos_ioctl(void *obj, unsigned int request, va_list args)
 	return -EINVAL;
 }
 
+/* Host ifindex of the interface that the offloaded one represents.
+ *
+ * Resolved on first use rather than from the .enable hook: services_init() in
+ * net_core.c starts the mDNS responder, which binds sockets, before
+ * net_if_post_init() brings the interface up, so .enable is too late for the
+ * first users.
+ */
+static int nsos_host_ifindex(void)
+{
+	static int cached; /* 0 unresolved, -1 resolved-none, >0 host ifindex */
+
+	if (cached == 0) {
+		const char *name = CONFIG_NET_NATIVE_OFFLOADED_SOCKETS_HOST_IF_NAME;
+		int ret = nsos_adapt_host_ifindex(name);
+
+		if (ret > 0) {
+			cached = ret;
+		} else {
+			cached = -1;
+			LOG_WRN("Cannot resolve represented host interface \"%s\" (%d); host "
+				"addresses are not mirrored and scoped IPv6 binds will fail",
+				name[0] != '\0' ? name : "<default route>", ret);
+		}
+	}
+
+	return (cached > 0) ? cached : 0;
+}
+
 /* Only addresses with a scope narrower than global carry an interface index;
  * everything else must not carry one.
  */
@@ -712,30 +738,6 @@ static int nsos_poll_if_blocking(struct nsos_socket *sock, int events,
 	}
 
 	return 0;
-}
-
-/* The single offloaded interface represents one host interface; resolve and
- * cache its host ifindex for pinning multicast egress, joins and IPv6 scope.
- * Resolved once for the process lifetime and accessed single-threaded at iface
- * enable and socket setup, so the unlocked static needs no protection.
- */
-static int nsos_host_ifindex(void)
-{
-	static int cached; /* 0 unresolved, -1 resolved-none, >0 host ifindex */
-
-	if (cached == 0) {
-		int ret = nsos_adapt_host_ifindex(CONFIG_NET_NATIVE_OFFLOADED_SOCKETS_HOST_IF_NAME);
-
-		if (ret > 0) {
-			cached = ret;
-		} else {
-			cached = -1;
-			LOG_WRN("Cannot resolve represented host interface; "
-				"multicast falls back to host route selection");
-		}
-	}
-
-	return (cached > 0) ? cached : 0;
 }
 
 static int nsos_bind(void *obj, const struct net_sockaddr *addr, net_socklen_t addrlen)
@@ -1909,14 +1911,19 @@ static void nsos_iface_add_host_addrs(struct net_if *iface)
 {
 	struct nsos_mid_ifaddr addrs[MAX(NET_IF_MAX_IPV4_ADDR + NET_IF_MAX_IPV6_ADDR, 1)];
 	size_t count = ARRAY_SIZE(addrs);
+	int host_ifindex;
 	int ret;
 
 	if (!IS_ENABLED(CONFIG_NET_IPV4) && !IS_ENABLED(CONFIG_NET_IPV6)) {
 		return;
 	}
 
-	ret = nsos_adapt_get_ifaddrs(CONFIG_NET_NATIVE_OFFLOADED_SOCKETS_HOST_IF_NAME, addrs,
-				     &count);
+	host_ifindex = nsos_host_ifindex();
+	if (host_ifindex == 0) {
+		return;
+	}
+
+	ret = nsos_adapt_get_ifaddrs(host_ifindex, addrs, &count);
 	if (ret < 0) {
 		LOG_DBG("Cannot get host interface addresses (%d)", ret);
 		return;

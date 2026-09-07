@@ -1342,18 +1342,12 @@ static uint8_t netmask_to_prefix(const uint8_t *mask, size_t len)
 	return prefix;
 }
 
-int nsos_adapt_get_ifaddrs(const char *ifname, struct nsos_mid_ifaddr *addrs, size_t *count)
+int nsos_adapt_get_ifaddrs(int ifindex, struct nsos_mid_ifaddr *addrs, size_t *count)
 {
 	struct ifaddrs *ifap;
 	size_t capacity = *count;
 	size_t stored = 0;
 	size_t total = 0;
-	int target = nsos_adapt_host_ifindex(ifname);
-
-	if (target <= 0) {
-		*count = 0;
-		return 0;
-	}
 
 	if (getifaddrs(&ifap) < 0) {
 		return -nsi_errno_to_mid(errno);
@@ -1369,7 +1363,7 @@ int nsos_adapt_get_ifaddrs(const char *ifname, struct nsos_mid_ifaddr *addrs, si
 			continue;
 		}
 
-		if (if_nametoindex(ifa->ifa_name) != (unsigned int)target ||
+		if (if_nametoindex(ifa->ifa_name) != (unsigned int)ifindex ||
 		    !(ifa->ifa_flags & IFF_UP)) {
 			continue;
 		}

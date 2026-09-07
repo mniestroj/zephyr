@@ -182,6 +182,6 @@ int nsos_adapt_getaddrinfo(const char *node, const char *service,
 			   int *system_errno);
 void nsos_adapt_freeaddrinfo(struct nsos_mid_addrinfo *res);
 
-int nsos_adapt_get_ifaddrs(const char *ifname, struct nsos_mid_ifaddr *addrs, size_t *count);
+int nsos_adapt_get_ifaddrs(int ifindex, struct nsos_mid_ifaddr *addrs, size_t *count);
 
 #endif /* __DRIVERS_NET_NSOS_H__ */
